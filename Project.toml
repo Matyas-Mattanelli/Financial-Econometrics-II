@@ -1,5 +1,6 @@
 [deps]
 DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
+GARCH = "4d2f22df-77d7-5622-8d7f-1db4ec2bcc3a"
 MarketData = "945b72a4-3b13-509d-9b46-1525bb5c06de"
 Statistics = "10745b16-79ce-11e8-11f9-7d13ad32a3b2"
 StatsPlots = "f3b207a7-027a-5e70-b257-86293d7955fd"
