@@ -37,4 +37,14 @@ function train_test_split(predictors, target, test_size)
     
 end
 
+#A helper function for extracting model parameters
+function extract_params(model)
+    params = Flux.params(model) #Extract the parameters in Flux form
+    final_params = vec(params[1]) #Extract the weights from the first layer and flatten their matrix
+    for i in 2:length(params) #Iteratively add the flattened parameters to the previously defined vector
+        final_params = vcat(final_params, vec(params[i]))
+    end
+    return final_params #Return the final vector of parameters
+end
+
 println("[> Loaded $(@__FILE__)")
