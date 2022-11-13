@@ -192,6 +192,88 @@ function train_RNN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5,
     end
 end;
 
+#Define function performing ensemble averaging for a set of NN models
+function get_ensemble(X_train, y_train, X_test, y_test, models; weights = false, loss = Flux.Losses.mse)
+    #parameters: X_train, y_train, X_test, y_test: data used for training the NNs
+    #            models: list containing trained NNs (product of train_NN() function)
+    #optional:   weights: list of integers or floats of same length as models
+    #            loss: loss function to be used for evaluating result
+    fitted_ensemble = Matrix{Float64}(undef, 1, length(y_train)) #initialize empty matrices for ensembled values
+    preds_ensemble = Matrix{Float64}(undef, 1, length(y_test))
+ 
+    if weights == false #get weights of each model to be averaged
+       weights = ones(length(models)) ./length(models) #if no weights given, produce simple average (same weights for all)
+    else  
+       weights = weights ./sum(weights) #(transform vector of weights such that it sums to 1)
+    end
+ 
+    i = 1
+    for NN in models #for each model, get fitted/predicted values, multiply by weight and add them to the ensemble
+       fitted_ensemble = fitted_ensemble .+ (NN(X_train)) .*weights[i]
+       preds_ensemble = preds_ensemble .+ (NN(X_test)) .*weights[i]
+       i +=1
+    end      
+ 
+    println("Score of the ensemble:")
+    println("MSE (train): ", loss(fitted_ensemble, y_train), " \t MSE (test): ", loss(preds_ensemble, y_test))
+    return [fitted_ensemble, preds_ensemble]
+ end;
+
+##helper function to get sample size and return indicies ranges to be used further in CV
+function get_timesplits(sample_size; splits=4, test_size = 0.8) #parameters: Int, Int, float
+    foldsize = floor(Int, (sample_size/splits)) #compute size of one fold
+    fold_test_size = floor(Int, (foldsize*test_size)) #compute size of testing set in each fold
+    ranges = [(foldsize*i-foldsize+1):(foldsize*i) for i in 1:splits] #get ranges of folds (e.g. 1:100)
+    timesplits = [[range[1]:range[1]+fold_test_size, range[1]+fold_test_size+1:range[end]] for range in ranges] #get ranges of train/test splits (e.g. [1:81, 82:100])
+    return timesplits
+end;
+
+##Function performing the Cross-Validation of specified NN
+function cross_validate(X_train, y_train; folds = 4, test_size = 0.8, loss = Flux.Losses.mse, get_models = false,
+                        dropout = false, nodes = 5, activ_func = Flux.relu, output_func = Flux.identity, 
+                        loss_func = Flux.Losses.mse, α = 0, return_inits = false, learn_rate = 0.001, 
+                        opt = Flux.Descent, batch_size = false, n_epochs = 200, seed = 420, verbose = true)
+    #X and y need to be specified (assumed X_train, y_train) from before; 
+    #other params: n. of folds, test size to be used in CV,loss function to be used, and all params of train_NN()
+    timesplits = get_timesplits(size(X_train, 2), splits = folds, test_size = test_size)
+
+    mses_ls = []
+    models = []
+    for k in 1:folds
+        #split the data on training and testing , target on training and testing
+        train_range = timesplits[k][1] #get the range of X for current fold
+        test_range = timesplits[k][2] #get the range of y for current fold
+
+        X_fold_train = X_train[:,train_range] #get current fold training X and y training
+        y_fold_train = y_train[:, train_range]
+
+        X_fold_test = X_train[:,test_range] #get current fold training X and y training
+        y_fold_test = y_train[:, test_range]        
+
+        #train the network
+        NN_fold = train_NN(X_fold_train, y_fold_train, X_fold_test, y_fold_test; 
+                                            dropout = dropout, nodes = nodes, n_epochs = n_epochs, 
+                                            learn_rate = learn_rate, activ_func = activ_func, 
+                                            return_inits = return_inits, output_func = output_func, 
+                                            loss_func = loss_func, α = α, opt = opt, batch_size = batch_size,
+                                            seed = seed, verbose = verbose);
+        append!(models, NN_fold)
+        
+        #get the mse
+        mse = loss(NN_fold(X_fold_test), y_fold_test)
+        append!( mses_ls, mse ) #append MSE
+        println("Fold $k/$folds, Out-of-sample MSE: ", mse)
+    end
+    #avergae the mses
+    println("Cross-validation done. Average MSE: ", StatsBase.mean(mses_ls))
+
+    if get_models
+        return mses_ls, models
+    else
+        return mses_ls
+    end
+end;
+
 println("[> Loaded $(@__FILE__)")
 
 
