@@ -40,8 +40,8 @@ end
 #Function calculating and plotting the AutoCorrelation Function (ACF)
 function plot_ACF(time_series, title)
     Plots.plot(StatsBase.autocor(time_series), title = title, label = "ACF")
-    Plots.hline!([1.96 / sqrt(length(time_series))], color = "red", linestyle = :dash, label = "95% confidence level")
-    Plots.hline!([-1.96 / sqrt(length(time_series))], color = "red", linestyle = :dash, label = false)
+    Plots.hline!([1.96 / sqrt(length(time_series))], c = :red, linestyle = :dash, label = "95% confidence level")
+    Plots.hline!([-1.96 / sqrt(length(time_series))], c = :red, linestyle = :dash, label = false)
 end
 
 #Function standardizing a given data set based on mean and standard deviation of the training set
@@ -122,7 +122,7 @@ function train_NN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5, 
 end;
 
 #A function performing a grid search over a specified parameter grid
-function gridSearch(param_grid, X_train, y_train, X_test, y_test; verbose = true, return_best = false)
+function gridSearch(param_grid, X_train, y_train, X_test, y_test; verbose = true, return_best = false, func = train_NN)
     param_grid_keys = collect(keys(param_grid)) #Extract the names of the specified parameters
     results = DataFrames.DataFrame(Iterators.product(values(param_grid)...)) #Construct a data frame from all combinations of the parameter grid
     DataFrames.rename!(results, param_grid_keys)
@@ -131,7 +131,7 @@ function gridSearch(param_grid, X_train, y_train, X_test, y_test; verbose = true
         models = Vector{Any}(undef, size(results)[1]) #Initialize an empty vector to store the models
     end
     for row in 1:size(results)[1] #Iterate over all possible combinations
-        model = train_NN(X_train, y_train, X_test, y_test; Dict(param_grid_keys[i] => results[row, i] for i in 1:length(param_grid_keys))..., return_inits = false, verbose = false) #Train a model with the specified parameters
+        model = func(X_train, y_train, X_test, y_test; Dict(param_grid_keys[i] => results[row, i] for i in 1:length(param_grid_keys))..., return_inits = false, verbose = false) #Train a model with the specified parameters
         if return_best
             models[row] = model
         end
@@ -148,7 +148,7 @@ function gridSearch(param_grid, X_train, y_train, X_test, y_test; verbose = true
 end;
 
 #A function for Recurrent Neural Network estimation. We assume only a single hidden layer since it should be sufficient for approximation of any function
-function train_RNN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5, activ_func = Flux.relu, output_func = Flux.identity, loss_func = Flux.Losses.mse, α = 0, return_inits = true, learn_rate = 0.001, opt = Flux.Descent, n_epochs = 1000, seed = 420, verbose = true, max_patience = 10)
+function train_RNN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5, activ_func = Flux.relu, output_func = Flux.identity, loss_func = Flux.Losses.mse, α = 0, return_inits = true, learn_rate = 0.001, opt = Flux.Descent, n_epochs = 100, seed = 420, verbose = true, max_patience = 10)
     Random.seed!(seed) #Set the seed for reproducibility
     if dropout == false
         model = Flux.Chain(Flux.RNN(size(X_train, 1), nodes, activ_func), Flux.Dense(nodes, size(y_train, 1), output_func)) #Specify the model
@@ -181,7 +181,9 @@ function train_RNN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5,
             epoch % (n_epochs / 10) == 0 ? println("Epoch $epoch \t MSE (train): ", current_train_loss, " \t MSE (test): ", current_test_loss) : nothing #Report the losses for each tenth of the number of epochs
         end
         if patience >= max_patience #Check if the patience run out
-            println("Early stopping at epoch $epoch. \t Final MSE (test): ", best_loss)
+            if verbose
+                println("Early stopping at epoch $epoch. \t Final MSE (test): ", best_loss)
+            end
             break #Stop optimalization
         end
     end
