@@ -147,6 +147,51 @@ function gridSearch(param_grid, X_train, y_train, X_test, y_test; verbose = true
     end
 end;
 
+#A function for Recurrent Neural Network estimation. We assume only a single hidden layer since it should be sufficient for approximation of any function
+function train_RNN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5, activ_func = Flux.relu, output_func = Flux.identity, loss_func = Flux.Losses.mse, α = 0, return_inits = true, learn_rate = 0.001, opt = Flux.Descent, n_epochs = 1000, seed = 420, verbose = true, max_patience = 10)
+    Random.seed!(seed) #Set the seed for reproducibility
+    if dropout == false
+        model = Flux.Chain(Flux.RNN(size(X_train, 1), nodes, activ_func), Flux.Dense(nodes, size(y_train, 1), output_func)) #Specify the model
+    else
+        model = Flux.Chain(Flux.RNN(size(X_train, 1), nodes, activ_func), Flux.Dropout(dropout), Flux.Dense(nodes, size(y_train, 1), output_func)) #Specify the model
+    end
+    l2_norm(x) = sum(abs2, x) #Define a function to calculate the L2 norm
+    loss(x, y) = loss_func(model(x), y) + α*sum(l2_norm, Flux.params(model)) #Specify the loss function with an L2 regularization term (defaultly, regularization is disabled by setting α = 0)
+    parameters = Flux.params(model) #Specify the parameters to be estimated
+    if return_inits #If required, save the initial parameters
+        initial_parameters = extract_params(model)
+    end
+    data_train = [(X_train, y_train)] #Specify the training data    
+    best_loss = Inf #Initialize the best loss
+    best_model = deepcopy(model) #Initialize the best model
+    patience = 0 #Initialize patience count
+    for epoch in 1:n_epochs #Train the model iteratively
+        Flux.reset!(model) #Reset hidden state every epoch before training since we begin at t=1
+        Flux.train!(loss, parameters, data_train, opt(learn_rate)) #Train model for the current epoch
+        current_test_loss = loss_func(model(X_test), y_test) #Calculate the current test loss without reseting the model
+        Flux.reset!(model) #Reset the model to run it through the train data
+        current_train_loss = loss(X_train, y_train) #Store current training loss
+        if best_loss > current_test_loss #Check if the current model is better than the best one so far
+            best_model = deepcopy(model) #If so, store it
+            best_loss = copy(current_test_loss) #And its loss as well
+        else #Otherwise indicate that the model is worse
+            patience += 1
+        end
+        if verbose
+            epoch % (n_epochs / 10) == 0 ? println("Epoch $epoch \t MSE (train): ", current_train_loss, " \t MSE (test): ", current_test_loss) : nothing #Report the losses for each tenth of the number of epochs
+        end
+        if patience >= max_patience #Check if the patience run out
+            println("Early stopping at epoch $epoch. \t Final MSE (test): ", best_loss)
+            break #Stop optimalization
+        end
+    end
+    if return_inits #If required, return the initial parameters
+        return initial_parameters, best_model
+    else #Otherwise return only the trained model
+        return best_model
+    end
+end;
+
 println("[> Loaded $(@__FILE__)")
 
 
