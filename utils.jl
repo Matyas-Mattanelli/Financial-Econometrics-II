@@ -221,6 +221,33 @@ function get_ensemble(X_train, y_train, X_test, y_test, models; weights = false,
     return [fitted_ensemble, preds_ensemble]
  end;
 
+#Ensemble averaging for RNNs
+function get_ensemble_RNN(X_train, y_train, X_test, y_test, models; weights = false, loss = Flux.Losses.mse)
+    #parameters: X_train, y_train, X_test, y_test: data used for training the NNs
+    #            models: list containing trained NNs (product of train_NN() function)
+    #optional:   weights: list of integers or floats of same length as models
+    #            loss: loss function to be used for evaluating result
+    fitted_ensemble = zeros(Float64, 1, length(y_train)) |> permutedims #initialize empty matrices for ensembled values
+    preds_ensemble = zeros(Float64, 1, length(y_test)) |> permutedims
+ 
+    if weights == false #get weights of each model to be averaged
+       weights = ones(length(models)) ./length(models) #if no weights given, produce simple average (same weights for all)
+    else  
+       weights = weights ./sum(weights) #(transform vector of weights such that it sums to 1)
+    end
+ 
+    i = 1
+    for NN in models #for each model, get fitted/predicted values, multiply by weight and add them to the ensemble
+       fitted_ensemble = fitted_ensemble .+ (NN(X_train)[1,1,:]) .*weights[i]
+       preds_ensemble = preds_ensemble .+ (NN(X_test)[1,1,:]) .*weights[i]
+       i +=1
+    end      
+ 
+    println("Score of the ensemble:")
+    println("MSE (train): ", loss(fitted_ensemble, y_train[1,1,:]), " \t MSE (test): ", loss(preds_ensemble, y_test[1,1,:]))
+    return [fitted_ensemble, preds_ensemble]
+ end; 
+
 ##helper function to get sample size and return indicies ranges to be used further in CV
 function get_timesplits(sample_size; splits=4, test_size = 0.8) #parameters: Int, Int, float
     foldsize = floor(Int, (sample_size/splits)) #compute size of one fold
