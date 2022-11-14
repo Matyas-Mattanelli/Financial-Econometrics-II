@@ -200,8 +200,8 @@ function get_ensemble(X_train, y_train, X_test, y_test, models; weights = false,
     #            models: list containing trained NNs (product of train_NN() function)
     #optional:   weights: list of integers or floats of same length as models
     #            loss: loss function to be used for evaluating result
-    fitted_ensemble = Matrix{Float64}(undef, 1, length(y_train)) #initialize empty matrices for ensembled values
-    preds_ensemble = Matrix{Float64}(undef, 1, length(y_test))
+    fitted_ensemble = zeros(Float64, 1, length(y_train)) #initialize empty matrices for ensembled values
+    preds_ensemble = zeros(Float64, 1, length(y_test))
  
     if weights == false #get weights of each model to be averaged
        weights = ones(length(models)) ./length(models) #if no weights given, produce simple average (same weights for all)
