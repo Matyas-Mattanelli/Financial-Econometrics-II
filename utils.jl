@@ -195,13 +195,20 @@ function train_RNN(X_train, y_train, X_test, y_test; dropout = false, nodes = 5,
 end;
 
 #Define function performing ensemble averaging for a set of NN models
-function get_ensemble(X_train, y_train, X_test, y_test, models; weights = false, loss = Flux.Losses.mse)
+function get_ensemble(X_train, y_train, X_test, y_test, models; weights = false, loss = Flux.Losses.mse, print_models_score = true)
     #parameters: X_train, y_train, X_test, y_test: data used for training the NNs
     #            models: list containing trained NNs (product of train_NN() function)
     #optional:   weights: list of integers or floats of same length as models
     #            loss: loss function to be used for evaluating result
     fitted_ensemble = zeros(Float64, 1, length(y_train)) #initialize empty matrices for ensembled values
     preds_ensemble = zeros(Float64, 1, length(y_test))
+
+    if print_models_score
+        println("Score of each model from the ensemble:")
+        for NN in models
+            println("MSE (train): ", loss(NN(X_train), y_train), " \t MSE (test): ", loss(NN(X_test), y_test))
+        end
+    end
  
     if weights == false #get weights of each model to be averaged
        weights = ones(length(models)) ./length(models) #if no weights given, produce simple average (same weights for all)
@@ -222,13 +229,20 @@ function get_ensemble(X_train, y_train, X_test, y_test, models; weights = false,
  end;
 
 #Ensemble averaging for RNNs
-function get_ensemble_RNN(X_train, y_train, X_test, y_test, models; weights = false, loss = Flux.Losses.mse)
+function get_ensemble_RNN(X_train, y_train, X_test, y_test, models; weights = false, loss = Flux.Losses.mse, print_models_score = true)
     #parameters: X_train, y_train, X_test, y_test: data used for training the NNs
     #            models: list containing trained NNs (product of train_NN() function)
     #optional:   weights: list of integers or floats of same length as models
     #            loss: loss function to be used for evaluating result
     fitted_ensemble = zeros(Float64, 1, length(y_train)) |> permutedims #initialize empty matrices for ensembled values
     preds_ensemble = zeros(Float64, 1, length(y_test)) |> permutedims
+
+    if print_models_score
+        println("Score of each model from the ensemble:")
+        for NN in models
+            println("MSE (train): ", loss(NN(X_train)[1,1,:], y_train[1,1,:]), " \t MSE (test): ", loss(NN(X_test)[1,1,:], y_test[1,1,:]))
+        end
+    end
  
     if weights == false #get weights of each model to be averaged
        weights = ones(length(models)) ./length(models) #if no weights given, produce simple average (same weights for all)
