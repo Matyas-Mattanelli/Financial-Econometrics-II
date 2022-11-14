@@ -318,7 +318,7 @@ function cross_validate(X_train, y_train; folds = 4, test_size = 0.8, loss = Flu
 end;
 
 #Function computing Realized Variance from kibot intraday data
-function get_RV_from_kibot(data_OIH, returns_log = false)
+function get_RV_from_kibot(data_OIH; returns_log = false)
     data_close = data_OIH[:,[1,6]] #saving only dates and close adjusted price
     dates = unique(data_OIH[:,1]) #saving vector of dates
     RV_OIH = []
