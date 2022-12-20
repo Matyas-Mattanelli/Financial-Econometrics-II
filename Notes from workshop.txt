@@ -1,0 +1,16 @@
+Part A
+- try cumulative RV forecast
+- train the model on a different target - take an average of all t+h RVs and this is my dependent variable at time t
+- change the left hand side of the equation, right hand remains the same
+- implement for all kernels
+- do not consider values of 1 and higher for the bandwidths
+
+Part B
+- square the volatility to be comparable in the plot!
+- try putting the dot after the predict function for ARCHmodels
+
+Part C
+- take the last coefficients and make the predictions
+
+Part Final fusion
+- compare the forecasts using statistical tests from Finecox I (if the MSE is significantly lower/higher)
