@@ -1,13 +1,15 @@
 Part A
-- try cumulative RV forecast
-- train the model on a different target - take an average of all t+h RVs and this is my dependent variable at time t
-- change the left hand side of the equation, right hand remains the same
-- implement for all kernels
-- do not consider values of 1 and higher for the bandwidths
+- try average RV forecast - done
+- train the model on a different target - take an average of all t+h RVs and this is my dependent variable at time t - done
+- change the left hand side of the equation, right hand remains the same - done
+- implement for all kernels - done
+- do not consider values of 1 and higher for the bandwidths - done
 
 Part B
-- square the volatility to be comparable in the plot!
+- square the volatility to be comparable in the plot! - done
 - try putting the dot after the predict function for ARCHmodels
+- average RV forecast as in part A ??
+- incorporate rolling window (currently only 1, 5, and 22 values are compared in MSE)
 
 Part C
 - take the last coefficients and make the predictions

@@ -326,9 +326,9 @@ function get_RV_from_kibot(data_OIH; returns_log = false)
         day_prices = data_close[:,2][data_close[:,1] .== date]
 
         if returns_log  #geting returns or logreturns
-            returns = [log(fract) for fract in day_prices[2:end] ./ day_prices[1:end-1]] #returns: (r_i - r_i-1) / r_i-1
+            returns = [log(fract) for fract in day_prices[2:end] ./ day_prices[1:end-1]] #logreturns: log(r_i / r_i-1)
         else 
-            returns = (day_prices[2:end] .- day_prices[1:end-1])./day_prices[1:end-1] #logreturns: log(r_i / r_i-1)
+            returns = (day_prices[2:end] .- day_prices[1:end-1])./day_prices[1:end-1] #returns: (r_i - r_i-1) / r_i-1
         end
 
         RV = sum(returns .^2) #RV as sum of squared intraday rets
