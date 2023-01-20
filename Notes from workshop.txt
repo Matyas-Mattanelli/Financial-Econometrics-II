@@ -12,7 +12,7 @@ Part B
 - incorporate rolling window (currently only 1, 5, and 22 values are compared in MSE)
 
 Part C
-- take the last coefficients and make the predictions
+- take the last coefficients and make the predictions - done
 
 Part Final fusion
 - compare the forecasts using statistical tests from Finecox I (if the MSE is significantly lower/higher)
