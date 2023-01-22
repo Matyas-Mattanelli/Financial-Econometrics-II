@@ -53,6 +53,29 @@ function standardize(data) #Define a function normalizing data based on mean and
     return data1
 end
 
+#Function standardizing a given data set based on mean and standard deviation of the training set - changed for Project 2, part D
+function standardize_tv(data, test, standardize_train) #Define a function normalizing data based on mean and std of the training set
+    if standardize_train
+        mean_X_train = mapslices(StatsBase.mean, data; dims = 2)
+        std_X_train = mapslices(StatsBase.std, data; dims = 2)
+        data1 = copy(data) #Make a copy of the argument to prevent the function from changing it in place
+        for i in 1:length(mean_X_train) #Loop through the rows and normalize them
+            data1[i,:] = (data1[i,:] .- mean_X_train[i]) / std_X_train[i]
+        end
+        return data1
+    else
+        mean_X_train = mapslices(StatsBase.mean, data; dims = 2)
+        std_X_train = mapslices(StatsBase.std, data; dims = 2)
+        data1 = copy(test) #Make a copy of the argument to prevent the function from changing it in place
+        #println(length(mean_X_train))
+        for i in 1:length(mean_X_train) #Loop through the rows and normalize them
+            #println(i)
+            data1[1,i] = (data1[1,i] .- mean_X_train[i]) / std_X_train[i]
+        end
+        return data1
+    end    
+end
+
 #Function calculating the loss of a HAR model
 function loss_HAR((beta_0, beta_1, beta_2, beta_3)) #Define the loss function for HAR
     return StatsBase.mean((beta_0 .+ beta_1 * X_train[1, :] + beta_2 * X_train[2, :] + beta_3 * X_train[3, :] - transpose(y_train)) .^2)
